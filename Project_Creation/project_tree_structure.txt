@@ -1,0 +1,43 @@
+tree ls -a '/Users/.../Code/' > '/Users/.../Project_Creation/project_tree_structure.txt'
+
+ls  [error opening dir]
+/Users/.../Code/
+├── .DS_Store
+├── .gitignore
+├── application.py
+├── config
+│   ├── __init__.py
+│   ├── config.yaml
+│   └── paths_config.py
+├── custom_jenkins
+│   └── Dockerfile
+├── deployment.yaml
+├── Dockerfile
+├── Jenkinsfile
+├── notebook
+│   └── anime.ipynb
+├── pipeline
+│   ├── __init__.py
+│   ├── prediction_pipeline.py
+│   └── training_pipeline.py
+├── requirements.txt
+├── setup.py
+├── src
+│   ├── __init__.py
+│   ├── base_model.py
+│   ├── custom_exception.py
+│   ├── data_ingestion.py
+│   ├── data_processing.py
+│   ├── logger.py
+│   └── model_training.py
+├── static
+│   └── style.css
+├── templates
+│   └── index.html
+├── tester.py
+└── utils
+    ├── __init__.py
+    ├── common_functions.py
+    └── helpers.py
+
+9 directories, 29 files
