@@ -34,3 +34,7 @@ tester.py
 pyproject.toml
 deployment.yaml
 
+**/src/model_arch_02.py
+*/src/model_arch_02.py
+src/model_arch_02.py
+
