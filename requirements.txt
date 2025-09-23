@@ -14,3 +14,4 @@ dvc-gs
 flask
 joblib
 wordcloud
+python-dotenv

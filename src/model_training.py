@@ -1,5 +1,5 @@
 import joblib
-#import comet_ml
+import comet_ml
 import numpy as np
 import os
 #from tensorflow.keras.callbacks import ModelCheckpoint,LearningRateScheduler,TensorBoard,EarlyStopping
@@ -13,6 +13,9 @@ from src.base_model import BaseModel
 from config.paths_config import *
 ##PROCESSED_DIR
 
+from dotenv import load_dotenv
+load_dotenv()
+
 logger = get_logger(__name__)
 
 class ModelTraining:
@@ -20,7 +23,15 @@ class ModelTraining:
         self.data_path = data_path
 
         logger.info("Model Training Initialized")
-    
+        logger.info("Initializing Experiment Tracking")
+        
+        ## Initialize CometML for Experiment Tracking
+        self.experiment = comet_ml.Experiment(
+            api_key=os.getenv("COMET_ML_API"),
+            project_name=os.getenv("COMET_ML_PROJECT_NAME"),
+            workspace=os.getenv("COMET_ML_WORKSPC")
+            )
+        logger.info("Model Training and Experiment Tracking Initialized")
 
     def load_data(self):
         try:
@@ -96,6 +107,17 @@ class ModelTraining:
                 for epoch in range(len(history.history['loss'])):
                     train_loss = history.history["loss"][epoch]
                     val_loss = history.history["val_loss"][epoch]
+
+                    self.experiment.log_metric('train_loss', train_loss, step=epoch)
+                    self.experiment.log_metric('val_loss', val_loss, step=epoch)
+                
+                ## Testing to see if this works out as well
+                for epoch in range(len(history.history['mse'])):
+                    train_mse = history.history["mse"][epoch]
+                    val_mse = history.history["val_mse"][epoch]
+
+                    self.experiment.log_metric('mse', train_mse, step=epoch)
+                    self.experiment.log_metric("val_mse", val_mse, step=epoch)
             
             except Exception as e:
                 logger.error(str(e))
@@ -133,6 +155,11 @@ class ModelTraining:
             ## Using joblib since they are NumPy Arrays
             joblib.dump(user_weights, USER_WEIGHTS_PATH)
             joblib.dump(anime_weights, ANIME_WEIGHTS_PATH)
+            
+            self.experiment.log_asset(MODEL_PATH)
+            self.experiment.log_asset(ANIME_WEIGHTS_PATH)
+            self.experiment.log_asset(USER_WEIGHTS_PATH)
+            logger.info("Experiment Tracking - Model, Film Weights, User Weights Paths Saved Successfully")
             
             logger.info("User and Anime Weights Saved Successfully")
         
