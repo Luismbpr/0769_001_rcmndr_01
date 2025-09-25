@@ -17,12 +17,15 @@ def getAnimeFrame(anime, path_df):
     
     getAnimeFrame(anime=, path_df=)
     """
-    pd.set_option('display.max_columns', None)
-    df = pd.read_csv(path_df)
-    if isinstance(anime, int):
-        return df[df.anime_id == anime]
-    if isinstance(anime, str):
-        return df[df.eng_version == anime]
+    try:
+        pd.set_option('display.max_columns', None)
+        df = pd.read_csv(path_df)
+        if isinstance(anime, int):
+            return df[df.anime_id == anime]
+        if isinstance(anime, str):
+            return df[df.eng_version == anime]
+    except Exception as e:
+        print("Error occurred - getAnimeFrame")
 
 
 def getSynopsis(anime, path_synopsis_df):
@@ -35,30 +38,58 @@ def getSynopsis(anime, path_synopsis_df):
     
     
     getSynopsis(anime=, path_synopsis_df=)
-
-    Note: Mispelled column 
+    Note: Mispelled column ('sypnopsis') inside DataFrame.
     """
-    synopsis_df = pd.read_csv(path_synopsis_df)
+    try:
+        synopsis_df = pd.read_csv(path_synopsis_df)
+        
+        if 'sypnopsis' not in synopsis_df.columns:
+            raise ValueError("Expected column synopsis = 'sypnopsis' not found in dataset.")
+        
+        if isinstance(anime, int):
+            return synopsis_df[synopsis_df.MAL_ID == anime].sypnopsis.values[0]
+        
+        if isinstance(anime, str):
+            return synopsis_df[synopsis_df.Name == anime].sypnopsis.values[0]
+    except Exception as e:
+        print("Error occurred - getAnimeFrame")
+
+
+# def getSynopsis(anime, path_synopsis_df):
+#     """
+#     Args
+#         path_synopsis = ANIME_SYNOPSIS_CSV
     
-    ## Checks whether the column 'sypnopsis' exists inside the dataset
-    if 'sypnopsis' not in synopsis_df.columns:
-        raise ValueError("Expected column synopsis = 'sypnopsis' not found in dataset.")
+#     Returns
+#         .
     
-    if isinstance(anime, int):
-        return synopsis_df[synopsis_df.MAL_ID == anime].sypnopsis.values[0]
-        #result = synopsis_df[synopsis_df.MAL_ID == anime].sypnopsis.values[0]
-    if isinstance(anime, str):
-        return synopsis_df[synopsis_df.Name == anime].sypnopsis.values[0]
-        #result = synopsis_df[synopsis_df.Name == anime].sypnopsis.values
-    #else:
-        #raise TypeError("Input must be an integer or a string")
     
-    ## Handle case where not match is found
-    #if result.empty:
-        #raise LookupError(f"No matching anime found for input: {anime}")
+#     getSynopsis(anime=, path_synopsis_df=)
+
+#     Note: Mispelled column 
+#     """
+#     try:
+#         synopsis_df = pd.read_csv(path_synopsis_df)
     
-    ## Return the synopsis (misspelled column)
-    #return result
+#     ## Checks whether the column 'sypnopsis' exists inside the dataset
+#     if 'sypnopsis' not in synopsis_df.columns:
+#         raise ValueError("Expected column synopsis = 'sypnopsis' not found in dataset.")
+    
+#     if isinstance(anime, int):
+#         return synopsis_df[synopsis_df.MAL_ID == anime].sypnopsis.values[0]
+#         #result = synopsis_df[synopsis_df.MAL_ID == anime].sypnopsis.values[0]
+#     if isinstance(anime, str):
+#         return synopsis_df[synopsis_df.Name == anime].sypnopsis.values[0]
+#         #result = synopsis_df[synopsis_df.Name == anime].sypnopsis.values
+#     #else:
+#         #raise TypeError("Input must be an integer or a string")
+    
+#     ## Handle case where not match is found
+#     #if result.empty:
+#         #raise LookupError(f"No matching anime found for input: {anime}")
+    
+#     ## Return the synopsis (misspelled column)
+#     #return result
 
 
 def find_similar_animes(name,
@@ -85,58 +116,60 @@ def find_similar_animes(name,
                         return_dist=False,
                         neg=False)
     """
-    ## Load weights and encoded-decoded mappings
-    anime_weights = joblib.load(path_anime_weights)
-    anime2anime_encoded = joblib.load(path_anime2anime_encoded)
-    anime2anime_decoded = joblib.load(path_anime2anime_decoded)
-    
-    ## Get the anime ID for the given name
-    index = getAnimeFrame(anime=name, path_df=path_anime_df).anime_id.values[0]
-    
-    ## using .get()
-    encoded_index = path_anime2anime_encoded.get(index)
-    
-    if encoded_index is None:
-        raise ValueError(f"Encoded index not found for anime ID: {index}")
-    
-    ## Compute Similarity Distances w/dot
-    weights = anime_weights
-    dists = np.dot(weights, weights[encoded_index])## Ensure weights [encoded_index] is a 1D array
-    sorted_dists = np.argsort(dists)
-
-    n = n+1
-
-    ## Select Closest to Farthest based on 'neg' flag
-    if neg:
-        closest = sorted_dists[:n]
-    else:
-        closest = sorted_dists[-n:]
-    
-    ## Return distances and closest indices if requested
-    if return_dist:
-        return dists, closest
-    
-    ## Build the similarity Array
-    SimilarityArr = []
-    for close in closest:
-        decoded_id = anime2anime_decoded.get(close)
-
-        anime_frame = getAnimeFrame(anime=decoded_id, path_df=path_anime_df)
-
-        anime_name = anime_frame.eng_version.values[0]
-        genre = anime_frame.Genres.values[0]
-        similarity = dists[close]
-
-        SimilarityArr.append({
-            "anime_id": decoded_id,
-            "name": anime_name,
-            "similarity": similarity,
-            "genre": genre,
-        })
-
+    try:
+        ## Load weights and encoded-decoded mappings
+        anime_weights = joblib.load(path_anime_weights)
+        anime2anime_encoded = joblib.load(path_anime2anime_encoded)
+        anime2anime_decoded = joblib.load(path_anime2anime_decoded)
+        
+        ## Get the anime ID for the given name
+        index = getAnimeFrame(anime=name, path_df=path_anime_df).anime_id.values[0]
+        
+        ## using .get()
+        encoded_index = path_anime2anime_encoded.get(index)
+        
+        if encoded_index is None:
+            raise ValueError(f"Encoded index not found for anime ID: {index}")
+        
+        ## Compute Similarity Distances w/dot
+        weights = anime_weights
+        dists = np.dot(weights, weights[encoded_index])## Ensure weights [encoded_index] is a 1D array
+        sorted_dists = np.argsort(dists)
+        
+        n = n+1
+        ## Select Closest to Farthest based on 'neg' flag
+        
+        if neg:
+            closest = sorted_dists[:n]
+        else:
+            closest = sorted_dists[-n:]
+        
+        ## Return distances and closest indices if requested
+        if return_dist:
+            return dists, closest
+        
+        ## Build the similarity Array
+        SimilarityArr = []
+        for close in closest:
+            decoded_id = anime2anime_decoded.get(close)
+            
+            anime_frame = getAnimeFrame(anime=decoded_id, path_df=path_anime_df)
+            
+            anime_name = anime_frame.eng_version.values[0]
+            genre = anime_frame.Genres.values[0]
+            similarity = dists[close]
+            
+            SimilarityArr.append({
+                "anime_id": decoded_id,
+                "name": anime_name,
+                "similarity": similarity,
+                "genre": genre,
+            })
         ## Create a DataFrame with results and sort by similarity
         Frame = pd.DataFrame(SimilarityArr).sort_values(by="similarity", ascending=False)
         return Frame[Frame.anime_id != index].drop(['anime_id'], axis=1)
+    except Exception as e:
+        print("Error occurred - find_similar_animes")
 
 
 def find_similar_users(item_input,
