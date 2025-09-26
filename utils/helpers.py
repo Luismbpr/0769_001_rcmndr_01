@@ -280,7 +280,7 @@ def get_user_preferences(user_id,
         print("Error occurred - get_user_preferences", e)
 
 
-def user_recommendations(similar_users,
+def get_user_recommendations(similar_users,
                          user_pref,
                          path_anime_df,
                          path_synopsis_df,
@@ -293,7 +293,7 @@ def user_recommendations(similar_users,
     Returns
         .
     
-    user_recommendations(similar_users,
+    get_user_recommendations(similar_users,
                          user_pref,
                          path_anime_df,
                          path_synopsis_df,
