@@ -15,10 +15,10 @@ def getAnimeFrame(anime, path_df):
             path_df = DF
     
     
-    getAnimeFrame(anime=, path_df=)
+    getAnimeFrame(anime, path_df)
     """
     try:
-        pd.set_option('display.max_columns', None)
+        #pd.set_option('display.max_columns', None)
         df = pd.read_csv(path_df)
         if isinstance(anime, int):
             return df[df.anime_id == anime]
@@ -31,14 +31,16 @@ def getAnimeFrame(anime, path_df):
 def getSynopsis(anime, path_synopsis_df):
     """
     Args
-        path_synopsis = ANIME_SYNOPSIS_CSV
+        .
     
     Returns
         .
     
     
-    getSynopsis(anime=, path_synopsis_df=)
+    
     Note: Mispelled column ('sypnopsis') inside DataFrame.
+
+    getSynopsis(anime, path_synopsis_df)
     """
     try:
         synopsis_df = pd.read_csv(path_synopsis_df)
@@ -107,11 +109,11 @@ def find_similar_animes(name,
     Returns
         .
     
-    find_similar_animes(name=,
-                        path_anime_weights=,
-                        path_anime2anime_encoded=,
-                        path_anime2anime_decoded=,
-                        path_anime_df=,
+    find_similar_animes(name,
+                        path_anime_weights,
+                        path_anime2anime_encoded,
+                        path_anime2anime_decoded,
+                        path_anime_df,
                         n=10,
                         return_dist=False,
                         neg=False)
@@ -120,27 +122,25 @@ def find_similar_animes(name,
         ## Load weights and encoded-decoded mappings
         anime_weights = joblib.load(path_anime_weights)
         anime2anime_encoded = joblib.load(path_anime2anime_encoded)
-        anime2anime_decoded = joblib.load(path_anime2anime_decoded)
-        
+        anime2anime_decoded = joblib.load(path_anime2anime_encoded)
+
         ## Get the anime ID for the given name
-        index = getAnimeFrame(anime=name, path_df=path_anime_df).anime_id.values[0]
-        
-        ## using .get()
-        encoded_index = path_anime2anime_encoded.get(index)
-        
+        index = getAnimeFrame(name, path_anime_df).anime_id.values[0]
+        encoded_index = anime2anime_encoded.get(index)
+
         if encoded_index is None:
             raise ValueError(f"Encoded index not found for anime ID: {index}")
         
-        ## Compute Similarity Distances w/dot
+        ## Compute similarity distance
         weights = anime_weights
-        dists = np.dot(weights, weights[encoded_index])## Ensure weights [encoded_index] is a 1D array
+        dists = np.dot(weights, weights[encoded_index])## Ensure weights[encoded_index] is a 1D array
         sorted_dists = np.argsort(dists)
-        
+
         n = n+1
-        ## Select Closest to Farthest based on 'neg' flag
-        
+
+        ## Select closest or farthest based on 'neg' flag
         if neg:
-            closest = sorted_dists[:n]
+            closest = sorted_dists[n:]
         else:
             closest = sorted_dists[-n:]
         
@@ -148,26 +148,28 @@ def find_similar_animes(name,
         if return_dist:
             return dists, closest
         
-        ## Build the similarity Array
+        ## Build he similarity Array
         SimilarityArr = []
+        
         for close in closest:
             decoded_id = anime2anime_decoded.get(close)
-            
-            anime_frame = getAnimeFrame(anime=decoded_id, path_df=path_anime_df)
-            
+            anime_frame = getAnimeFrame(decoded_id, path_anime_df)
+
             anime_name = anime_frame.eng_version.values[0]
             genre = anime_frame.Genres.values[0]
             similarity = dists[close]
-            
+
             SimilarityArr.append({
                 "anime_id": decoded_id,
                 "name": anime_name,
                 "similarity": similarity,
-                "genre": genre,
+                "genre": genre
             })
-        ## Create a DataFrame with results and sort by similarity
+        
+        ## Create DataFrame with results and sort by similarity
         Frame = pd.DataFrame(SimilarityArr).sort_values(by="similarity", ascending=False)
         return Frame[Frame.anime_id != index].drop(['anime_id'], axis=1)
+    
     except Exception as e:
         print("Error occurred - find_similar_animes")
 
@@ -185,8 +187,15 @@ def find_similar_users(item_input,
     
     Returns
         .
-        
     
+    
+    find_similar_users(item_input,
+                       path_user_weights,
+                       path_user2user_encoded,
+                       path_user2user_decoded,
+                       n=10,
+                       return_dist=False,
+                       neg=False)
     """
     try:
         user_weights = joblib.load(path_user_weights)
@@ -194,7 +203,7 @@ def find_similar_users(item_input,
         user2user_decoded = joblib.load(path_user2user_decoded)
         
         index = item_input
-        encoded_index = user2user_encoded(index)
+        encoded_index = user2user_encoded.get(index)
         
         weights = user_weights
         
@@ -242,7 +251,9 @@ def get_user_preferences(user_id,
     Returns
         .
     
-    
+    get_user_preferences(user_id,
+                         path_rating_df,
+                         path_anime_df)
     """
     try:
         rating_df = pd.read_csv(path_rating_df)
@@ -250,7 +261,9 @@ def get_user_preferences(user_id,
         
         animes_watched_by_user = rating_df[rating_df.user_id == user_id]
         
-        user_rating_percentile = np.percentile(rating_df.rating, 75)
+        #user_rating_percentile = np.percentile(rating_df.rating, 75)## Error
+        ## Solution
+        user_rating_percentile = np.percentile(animes_watched_by_user.rating, 75)
         
         animes_watched_by_user = animes_watched_by_user[animes_watched_by_user.rating >= user_rating_percentile]
         
@@ -280,7 +293,12 @@ def user_recommendations(similar_users,
     Returns
         .
     
-    
+    user_recommendations(similar_users,
+                         user_pref,
+                         path_anime_df,
+                         path_synopsis_df,
+                         path_rating_df,
+                         n=10)
     """
     try:
         recommended_animes = []
@@ -289,7 +307,7 @@ def user_recommendations(similar_users,
         for user_id in similar_users.similar_users.values:
             pref_list = get_user_preferences(int(user_id), path_rating_df, path_anime_df)
             
-            pref_list = pref_list[~pref_list.eng_version.isin(user_pref.env_version.values)]
+            pref_list = pref_list[~pref_list.eng_version.isin(user_pref.eng_version.values)]
             
             if not pref_list.empty:
                 anime_list.append(pref_list.eng_version.values)
