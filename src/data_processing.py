@@ -147,6 +147,8 @@ class DataProcessor:
                         name = df[df.anime_id == anime_id].Name.values[0]
                 except:
                     print("Error in process_data function")
+                    ##return name## Error
+                ## Note: return must be on the same indentation as the except statement
                 return name
             
             df["anime_id"] = df["MAL_ID"]
