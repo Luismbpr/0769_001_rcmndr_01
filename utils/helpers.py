@@ -22,8 +22,10 @@ def getAnimeFrame(anime, path_df):
         df = pd.read_csv(path_df)
         if isinstance(anime, int):
             return df[df.anime_id == anime]
+        
         if isinstance(anime, str):
             return df[df.eng_version == anime]
+    
     except Exception as e:
         print("Error occurred - getAnimeFrame")
 
@@ -117,14 +119,19 @@ def find_similar_animes(name,
                         n=10,
                         return_dist=False,
                         neg=False)
+    
+    Note: changed path_df to path_anime_df due to conflicting issues.
+    path_df was conflicting with getAnimeFrame(anime, path_df) which was called inside of this function.
+    The interpreter was using it as a method instead of a path.
     """
     try:
         ## Load weights and encoded-decoded mappings
         anime_weights = joblib.load(path_anime_weights)
         anime2anime_encoded = joblib.load(path_anime2anime_encoded)
-        anime2anime_decoded = joblib.load(path_anime2anime_encoded)
+        anime2anime_decoded = joblib.load(path_anime2anime_decoded)
 
         ## Get the anime ID for the given name
+        ## Note: Directly pass the path_df (now path_anime_df) into function below
         index = getAnimeFrame(name, path_anime_df).anime_id.values[0]
         encoded_index = anime2anime_encoded.get(index)
 
@@ -140,7 +147,8 @@ def find_similar_animes(name,
 
         ## Select closest or farthest based on 'neg' flag
         if neg:
-            closest = sorted_dists[n:]
+            #closest = sorted_dists[n:]## Error
+            closest = sorted_dists[:n]## Solution
         else:
             closest = sorted_dists[-n:]
         
@@ -153,6 +161,7 @@ def find_similar_animes(name,
         
         for close in closest:
             decoded_id = anime2anime_decoded.get(close)
+            ## Note: Directly pass path_anime_df into function below
             anime_frame = getAnimeFrame(decoded_id, path_anime_df)
 
             anime_name = anime_frame.eng_version.values[0]
@@ -233,9 +242,12 @@ def find_similar_users(item_input,
                     "similarity": similarity
                     })
                 
-                similar_users = pd.DataFrame(SimilarityArr).sort_values(by="similarity", ascending=False)
-                similar_users = similar_users[similar_users.similar_users != item_input]
-                return similar_users
+                #similar_users = pd.DataFrame(SimilarityArr).sort_values(by="similarity", ascending=False)
+                #similar_users = similar_users[similar_users.similar_users != item_input]
+                #return similar_users
+        similar_users = pd.DataFrame(SimilarityArr).sort_values(by="similarity", ascending=False)
+        similar_users = similar_users[similar_users.similar_users != item_input]
+        return similar_users
     
     except Exception as e:
         print("Error occurred - find_similar_users", e)
@@ -254,6 +266,8 @@ def get_user_preferences(user_id,
     get_user_preferences(user_id,
                          path_rating_df,
                          path_anime_df)
+    
+    Note: changed path_df to path_anime_df due to conflicting issues
     """
     try:
         rating_df = pd.read_csv(path_rating_df)
@@ -281,11 +295,11 @@ def get_user_preferences(user_id,
 
 
 def get_user_recommendations(similar_users,
-                         user_pref,
-                         path_anime_df,
-                         path_synopsis_df,
-                         path_rating_df,
-                         n=10):
+                             user_pref,
+                             path_anime_df,
+                             path_synopsis_df,
+                             path_rating_df,
+                             n=10):
     """
     Args
         .
@@ -293,12 +307,15 @@ def get_user_recommendations(similar_users,
     Returns
         .
     
+    
     get_user_recommendations(similar_users,
-                         user_pref,
-                         path_anime_df,
-                         path_synopsis_df,
-                         path_rating_df,
-                         n=10)
+                             user_pref,
+                             path_anime_df,
+                             path_synopsis_df,
+                             path_rating_df,
+                             n=10)
+    
+    Notes:
     """
     try:
         recommended_animes = []

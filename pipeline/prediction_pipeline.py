@@ -7,7 +7,11 @@ from utils.helpers import *
 
 def hybrid_recommendation(user_id, user_weight=0.5, content_weight=0.5):
     """
+    Prediction Pipeline using a Hybrid Recommendation System
+
     Hybrid Recommendation System
+    Finds Similar Users
+    Finds Similar Users
 
     Args
         .
@@ -20,21 +24,14 @@ def hybrid_recommendation(user_id, user_weight=0.5, content_weight=0.5):
     try:
         #logger.info("prediction_pipeline.py - hybrid_recommendation Started")
         ##User Recommendation
-        similar_users = find_similar_users(item_input=user_id,
-                                           path_user_weights=USER_WEIGHTS_PATH,
-                                           path_user2user_encoded=USER2USER_ENCODED,
-                                           path_user2user_decoded=USER2USER_DECODED,
+        similar_users = find_similar_users(user_id, USER_WEIGHTS_PATH,
+                                           USER2USER_ENCODED, USER2USER_DECODED,
                                            n=10, return_dist=False, neg=False)
         
-        user_pref = get_user_preferences(user_id,
-                                         path_rating_df=RATING_DF,
-                                         path_anime_df=DF)
+        user_pref = get_user_preferences(user_id, RATING_DF, DF)
         
-        user_recommended_animes = get_user_recommendations(similar_users=similar_users,
-                                                           user_pref=user_pref,
-                                                           path_anime_df=DF,
-                                                           path_synopsis_df=SYNOPSIS_DF,
-                                                           path_rating_df=RATING_DF,
+        user_recommended_animes = get_user_recommendations(similar_users, user_pref, DF,
+                                                           SYNOPSIS_DF, RATING_DF,
                                                            n=10)
         
         user_recommended_anime_list = user_recommended_animes["anime_name"].tolist()
@@ -43,19 +40,15 @@ def hybrid_recommendation(user_id, user_weight=0.5, content_weight=0.5):
         content_recommended_animes = []
 
         for anime in user_recommended_anime_list:
-            similar_animes = find_similar_animes(name=anime,
-                                                 path_anime_weights=ANIME_WEIGHTS_PATH,
-                                                 path_anime2anime_encoded=ANIME2ANIME_ENCODED,
-                                                 path_anime2anime_decoded=ANIME2ANIME_DECODED,
-                                                 path_anime_df=DF,
-                                                 n=10,
-                                                 return_dist=False,
-                                                 neg=False)
+            similar_animes = find_similar_animes(anime, ANIME_WEIGHTS_PATH,
+                                                 ANIME2ANIME_ENCODED, ANIME2ANIME_DECODED,
+                                                 DF,
+                                                 n=10, return_dist=False, neg=False)
             
             if similar_animes is not None and not similar_animes.empty:
                 content_recommended_animes.extend(similar_animes["name"].tolist())
             else:
-                print(f"No similar anime foind {anime}")
+                print(f"No similar anime found {anime}")
             
         combined_scores = {}
 
@@ -70,8 +63,7 @@ def hybrid_recommendation(user_id, user_weight=0.5, content_weight=0.5):
         #logger.info("prediction_pipeline.py - hybrid_recommendation Completed Successfully")
         #logger.info(f"sorted_animes:\n{print([anime for anime, score in sorted_animes in sorted_animes[:10]])}")
         
-        return [anime for anime, score in sorted_animes in sorted_animes[:10]]
+        return [anime for anime, score in sorted_animes[:10]]
     
     except Exception as e:
-        #logger.info("Error occurred - prediction_pipeline.py - hybrid_recommendation", e)
         print("Error occurred - prediction_pipeline.py - hybrid_recommendation", e)
