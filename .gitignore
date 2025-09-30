@@ -40,3 +40,5 @@ deployment.yaml
 */src/model_arch_02.py
 src/model_arch_02.py
 
+templates/index02.html
+static/style02.css
