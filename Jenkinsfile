@@ -46,8 +46,8 @@ pipeline {
 
         /* Pull the project from DVC Bucket to project directory */
         /* Credential id name for this 'gcp-key' in
-                Dashboard > Manage Jenkins > Credentials
-                Want to save this with variable name 'GOOGLE_APPLICATION_CREDENTIALS' */
+        Dashboard > Manage Jenkins > Credentials
+        Want to save this with variable name 'GOOGLE_APPLICATION_CREDENTIALS' */
         stage('DVC Pull'){
             steps{
                 withCredentials([file(credentialsId:'gcp-key' , variable: 'GOOGLE_APPLICATION_CREDENTIALS' )]){
@@ -61,5 +61,46 @@ pipeline {
                 }
             }
         }
+        
+        /* Push the Docker Image from the Docker File into the GCR */
+        stage('Build and Push Image to GCR'){
+            steps{
+                withCredentials([file(credentialsId:'gcp-key' , variable: 'GOOGLE_APPLICATION_CREDENTIALS' )]){
+                    script{
+                        echo 'Build and Push Image to GCR'
+                        sh '''
+                        export PATH=$PATH:${GCLOUD_PATH}
+                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                        gcloud config set project ${GCP_PROJECT}
+                        gcloud auth configure-docker --quiet
+                        docker build -t gcr.io/${GCP_PROJECT}/ml-project:latest .
+                        docker push gcr.io/${GCP_PROJECT}/ml-project:latest
+                        '''
+                    }
+                }
+            }
+        }
+
+        /* Kubernetes Deployment 
+        Get cluster credentials: cluster name in Gcloud: ml-app-cluster
+        Taken from Google Cloud / Kubernetes Engine / Clusters
+        */
+        stage('Deployment to Kubernetes'){
+            steps{
+                withCredentials([file(credentialsId:'gcp-key' , variable: 'GOOGLE_APPLICATION_CREDENTIALS' )]){
+                    script{
+                        echo 'Deployment to Kubernetes'
+                        sh '''
+                        export PATH=$PATH:${GCLOUD_PATH}:${KUBECTL_AUTH_PLUGIN}
+                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                        gcloud config set project ${GCP_PROJECT}
+                        gcloud container clusters get-credentials ml-app-cluster --region us-central1
+                        kubectl apply -f deployment.yaml
+                        '''
+                    }
+                }
+            }
+        }
+
     }
 }
